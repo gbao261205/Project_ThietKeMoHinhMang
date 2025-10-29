@@ -1,0 +1,53 @@
+conf t
+hostname AccessSw1
+
+int range fa0/1-24
+ shutdown
+ ex
+
+! Cau hinh ssh
+ip domain-name cisco.local
+username admin privilege 15 secret cisco123
+crypto key generate rsa
+ yes
+ 1024
+ip ssh version 2
+
+ip access-list standard Telnet_QT
+ permit 172.6.111.0 0.0.0.255
+ deny   any
+
+line vty 0 4
+ login local
+ transport input all
+ access-class TelnetQT in
+line console 0
+ login local
+ exit
+
+vlan 10
+ name Users-10
+
+! EtherChannel trunk lên Dist
+interface range fa0/11 - 12
+ channel-group 2 mode active
+ no shut
+interface port-channel2
+ switchport mode trunk
+ switchport trunk allowed vlan 10
+ no shut
+
+! Cổng xuống PC (ví dụ fa0/1-2)
+interface range fa0/1 - 2
+ switchport mode access
+ switchport access vlan 10
+ switchport port-security
+ switchport port-security maximum 1
+ switchport port-security violation restrict
+ switchport port-security mac-address sticky
+ spanning-tree portfast
+ no shut
+ exit
+
+end
+wr

@@ -1,0 +1,25 @@
+conf t
+hostname AccessSw2
+
+vlan 20
+ name Users-20
+
+! EtherChannel trunk lên Dist
+interface range fa0/13 - 14
+ channel-group 3 mode active
+ no shut
+interface port-channel3
+ switchport mode trunk
+ switchport trunk allowed vlan 20
+ no shut
+
+! Cổng xuống PC (ví dụ fa0/1)
+interface fa0/1
+ switchport mode access
+ switchport access vlan 20
+ spanning-tree portfast
+ no shut
+ exit
+
+end
+wr

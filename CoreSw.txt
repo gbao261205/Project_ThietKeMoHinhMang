@@ -1,0 +1,102 @@
+conf t
+hostname CoreSw
+ip routing
+
+ip access-list standard Telnet_QT
+ permit 172.6.111.0 0.0.0.255
+ deny any
+
+! Cau hinh ssh
+ip domain-name cisco.local
+username admin privilege 15 secret cisco123
+crypto key generate rsa
+ yes
+ 1024
+ip ssh version 2
+
+line vty 0 4
+ login local
+ transport input all
+ access-class Telnet_QT in
+ exit
+
+
+! L3 tới ServerSw
+interface gi0/1
+ no switchport
+ ip address 10.0.0.2 255.255.255.252
+ no shut
+
+! Po1: L3 xuống DistSw1 (fa0/3-4)
+interface range fa0/3 - 4
+ no sw
+ channel-group 1 mode active
+ no shut
+interface port-channel1
+ no switchport mode acc
+ ip address 10.0.0.5 255.255.255.252
+ no shut
+
+! Po2: L3 xuống DistSw2 (fa0/5-6)
+interface range fa0/5 - 6
+ no sw
+ channel-group 2 mode active
+ no shut
+interface port-channel2
+ no switchport mode acc
+ ip address 20.0.0.5 255.255.255.252
+ no shut
+
+! L3 den Admin
+interface fa0/2
+ no sw
+ ip add 172.6.111.1 255.255.255.0
+ ip helper-address 172.6.100.100
+ ip helper-address 172.6.100.200
+ no shut
+
+! L3 den VP TNTT
+interface fa0/10
+ no sw
+ ip add 172.6.10.1 255.255.255.0
+ ip helper-address 172.6.100.100
+ ip helper-address 172.6.100.200
+ no shut
+
+interface fa0/11
+ no sw
+ ip add 172.6.20.1 255.255.255.0
+ ip helper-address 172.6.100.100
+ ip helper-address 172.6.100.200
+ no shut
+
+!L3 den RouterA
+interface gig0/2
+ no sw
+ ip add 172.6.40.2 255.255.255.0
+ no shut
+
+router rip
+ version 2
+ no auto-summary
+ network 10.0.0.0
+ network 20.0.0.0
+ network 172.6.111.0
+ network 172.6.10.0
+ network 172.6.20.0
+ network 172.6.40.0
+ exit
+ip route 0.0.0.0 0.0.0.0 172.6.40.1
+
+ip access-list extended BLOCK_VLAN10
+ deny ip 172.7.10.0 0.0.0.255 172.6.111.0 0.0.0.255
+ deny ip 172.8.10.0 0.0.0.255 172.6.111.0 0.0.0.255
+ permit ip any any
+ exit
+
+interface fa0/2
+ ip access-group BLOCK_VLAN10 out
+ exit
+
+end
+wr

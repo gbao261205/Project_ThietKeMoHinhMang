@@ -1,0 +1,32 @@
+conf t
+hostname ServerSw
+ip routing
+
+vlan 100
+name Server-NET
+
+interface range fa0/11-12
+ switchport mode access
+ switchport access vlan 100
+ spanning-tree portfast
+
+interface vlan 100
+ ip address 172.6.100.1 255.255.255.0
+ no shut
+
+! Dùng L3 link đến CoreSw (routed port /30)
+interface gig0/1
+ no switchport
+ ip address 10.0.0.1 255.255.255.252
+ no shut
+
+router rip
+ version 2
+ no auto-summary
+ network 172.6.100.0
+ network 10.0.0.0
+ passive-interface vlan 100
+ exit
+
+end
+wr

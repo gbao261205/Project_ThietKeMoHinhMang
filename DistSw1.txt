@@ -1,0 +1,104 @@
+conf t
+hostname DistSw1
+ip routing
+
+! Tạo ACL chỉ cho phép subnet quản trị
+ip access-list standard Telnet_QT
+ permit 172.6.111.0 0.0.0.255
+ deny any
+
+! Cau hinh ssh
+ip domain-name cisco.local
+username admin privilege 15 secret cisco123
+crypto key generate rsa
+ yes
+ 1024
+ip ssh version 2
+
+line vty 0 4
+ login local
+ transport input all
+ access-class Telnet_QT in
+ exit
+
+vlan 10
+ name Users-10
+vlan 20
+ name Users-20
+vlan 30
+ name Users-30
+
+! Po1: L3 lên CoreSw (fa0/3-4)
+interface range fa0/3 - 4
+ no sw
+ channel-group 1 mode active
+ no shut
+interface port-channel1
+ no switchport mode acc
+ ip address 10.0.0.6 255.255.255.252
+ no shut
+
+! Po2: L2 trunk xuống AccessSw1 (fa0/11-12) - VLAN 10
+interface range fa0/11 - 12
+ channel-group 2 mode active
+ no shut
+interface port-channel2
+ sw mode acc
+ switchport mode trunk
+ switchport trunk allowed vlan 10
+ no shut
+
+! Po3: L2 trunk xuống AccessSw2 (fa0/13-14) - VLAN 20
+interface range fa0/13 - 14
+ channel-group 3 mode active
+ no shut
+interface port-channel3
+ sw mode acc
+ switchport mode trunk
+ switchport trunk allowed vlan 20
+ no shut
+
+! Po4: L2 trunk xuống AccessSw3 (fa0/15-16) - VLAN 30
+interface range fa0/15 - 16
+ channel-group 4 mode active
+ no shut
+interface port-channel4
+ sw mode acc
+ switchport mode trunk
+ switchport trunk allowed vlan 30
+ no shut
+
+! SVI làm default-gateway cho mạng 172.7.x.x
+interface vlan 10
+ ip address 172.7.10.1 255.255.255.0
+ ip helper-address 172.6.100.200
+ ip helper-address 172.6.100.100
+ no shut
+interface vlan 20
+ ip address 172.7.20.1 255.255.255.0
+ ip helper-address 172.6.100.200
+ ip helper-address 172.6.100.100
+ no shut
+interface vlan 30
+ ip address 172.7.30.1 255.255.255.0
+ ip helper-address 172.6.100.200
+ ip helper-address 172.6.100.100
+ no shut
+
+router rip
+ version 2
+ no auto-summary
+ network 10.0.0.0
+ network 172.7.10.0
+ network 172.7.20.0
+ network 172.7.30.0
+ passive-interface vlan 10
+ passive-interface vlan 20
+ passive-interface vlan 30
+ exit
+
+ip route 0.0.0.0 0.0.0.0 10.0.0.5
+
+
+end
+wr

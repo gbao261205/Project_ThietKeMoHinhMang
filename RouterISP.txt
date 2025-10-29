@@ -1,0 +1,33 @@
+conf t
+hostname ISP
+
+interface fa0/0
+ ip add 203.6.1.1 255.255.255.0
+ no shut
+ ex
+
+interface e0/1/0
+ ip add 8.8.8.1 255.255.255.0
+ no shut
+ ex
+
+interface fa0/1
+ ip add 204.6.1.1 255.255.255.0
+ no shut
+ ex
+
+router rip
+ver 2
+ net 203.6.1.0
+ net 204.6.1.0
+ ex
+
+ip route 192.168.8.0 255.255.255.0 204.6.1.2
+ip route 192.168.7.0 255.255.255.0 203.6.1.2
+ip route 4.4.4.0 255.255.255.0 203.6.1.2
+ip route 5.5.5.0 255.255.255.0 203.6.1.2
+
+end
+wr
+
+

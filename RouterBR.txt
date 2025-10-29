@@ -1,0 +1,67 @@
+conf t
+hostname BR
+
+interface fa0/0
+ ip add 192.168.8.2 255.255.255.0
+ ip nat inside
+ no shut
+ ex
+
+interface fa0/1
+ ip add 204.6.1.2 255.255.255.0
+ ip nat outside
+ no shut
+ ex
+
+router rip
+ver 2
+ net 192.168.8.0
+ ex
+
+ip access-list extended MYNAT
+ permit ip 192.168.8.0 0.0.0.255 8.0.0.0 0.255.255.255
+ permit ip 10.6.0.0 0.0.255.255 8.0.0.0 0.255.255.255
+ deny ip any any
+ ex
+
+ip nat inside source list MYNAT int fa0/1 overload
+
+
+! Cau hinh VPN
+! Route mặc định về ISP
+ip route 0.0.0.0 0.0.0.0 204.6.1.1
+!
+! --- IKE Phase 1 (ISAKMP) ---
+crypto isakmp policy 10
+ authentication pre-share
+ encryption 3des
+ hash md5
+ group 2
+ lifetime 86400
+exit
+! Khai báo khóa với peer là IP WAN phía Branch
+crypto isakmp key 123456 address 203.6.1.2
+!
+! --- IPsec Phase 2 ---
+crypto ipsec transform-set MYSET esp-3des esp-md5-hmac
+!
+! Lưu lượng "đáng quan tâm" đi qua VPN (LAN ↔ LAN)
+ip access-list extended VPN-TRAFFIC
+ permit ip 192.168.8.0 0.0.0.255 192.168.7.0 0.0.0.255
+ permit ip 192.168.8.0 0.0.0.255 172.0.0.0 0.255.255.255
+ permit ip 10.6.0.0 0.0.255.255 192.168.7.0 0.0.0.255
+ permit ip 10.6.0.0 0.0.255.255 172.0.0.0 0.255.255.255
+exit
+!
+! Tạo crypto map & gán peer/ACL/transform-set
+crypto map MYMAP 10 ipsec-isakmp
+ set peer 203.6.1.2
+ set transform-set MYSET
+ match address VPN-TRAFFIC
+!
+! Áp crypto map lên cổng WAN
+interface fa0/1
+ crypto map MYMAP
+
+end
+wr

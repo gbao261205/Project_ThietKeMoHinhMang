@@ -1,0 +1,30 @@
+conf t
+hostname AccessSw1
+
+vlan 10
+ name Users-10
+
+! Hardening AccessSw1
+interface range fa0/1 - 24
+ shutdown
+exit
+
+! EtherChannel trunk lên Dist
+interface range fa0/11 - 12
+ channel-group 3 mode active
+ no shut
+interface port-channel3
+ sw mode acc
+ switchport mode trunk
+ switchport trunk allowed vlan 10
+ no shut
+
+! Cổng xuống PC (ví dụ fa0/1-2), port-security
+interface range fa0/1 - 2
+ switchport mode access
+ switchport access vlan 10
+ spanning-tree portfast
+ no shut
+
+end
+wr

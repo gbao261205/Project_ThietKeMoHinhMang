@@ -1,0 +1,25 @@
+conf t
+hostname AccessSw3
+
+vlan 30
+ name Users-30
+
+! EtherChannel trunk len Dist
+interface range fa0/15 - 16
+ channel-group 4 mode active
+ no shut
+interface port-channel4
+ switchport mode trunk
+ switchport trunk allowed vlan 30
+ no shut
+
+! Cong xuong PC (vd fa0/1)
+interface fa0/1
+ switchport mode access
+ switchport access vlan 30
+ spanning-tree portfast
+ no shut
+ exit
+
+end
+wr

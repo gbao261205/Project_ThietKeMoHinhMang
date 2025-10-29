@@ -1,0 +1,24 @@
+conf t
+hostname Firewall_BR
+
+interface gig0/0
+ ip add 192.168.8.1 255.255.255.0
+ no shut
+ ex
+
+interface gig0/1
+ ip add 10.6.50.1 255.255.255.0
+ no shut
+ ex
+
+router rip
+ver 2
+ net 192.168.8.0
+ net 10.6.50.0
+ no auto-summary
+ ex
+
+ip route 0.0.0.0 0.0.0.0 192.168.8.2
+
+end
+wr
